@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from keras.models import load_model
+import tensorflow as tf
+from tensorflow.keras.models import load_model
 from sklearn.preprocessing import StandardScaler
 
 # -------------------------------
@@ -10,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 st.title(" Skin Cancer Prediction (Metadata-Based)")
 st.write("Enter patient details to predict if the case is **Benign** or **Malignant**")
 
-# Load trained model
+# Load trained model (.h5 file)
 model = load_model("skin_cancer_metadata_final.h5")
 
 # -------------------------------
@@ -41,7 +42,7 @@ biopsed = st.selectbox("Biopsed", [0, 1])
 diameter_1 = st.number_input("Diameter 1 (mm)", min_value=0.0, value=5.0)
 diameter_2 = st.number_input("Diameter 2 (mm)", min_value=0.0, value=6.0)
 
-# Collect all inputs in order
+# Collect inputs
 input_data = np.array([[
     age, smoke, drink, background_father, background_mother,
     pesticide, gender, skin_cancer_history, cancer_history,
@@ -51,11 +52,11 @@ input_data = np.array([[
 ]])
 
 # -------------------------------
-# Prediction Button
+# Prediction
 # -------------------------------
-if st.button(" Predict"):
+if st.button("Predict"):
     try:
-        # Scale input dynamically (same as StandardScaler)
+        # Standardize input
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(input_data)
 
