@@ -1,56 +1,47 @@
 import streamlit as st
-import tensorflow as tf
 import pandas as pd
 import numpy as np
+from keras.models import load_model
 from sklearn.preprocessing import StandardScaler
 
-# ----------------------------------
-# 1️⃣ Load the trained model safely
-# ----------------------------------
-@st.cache_resource
-def load_model():
-    model = tf.keras.models.load_model("skin_cancer_metadata_final.h5")
-    return model
+# -------------------------------
+# Load Model
+# -------------------------------
+st.title(" Skin Cancer Prediction (Metadata-Based)")
+st.write("Enter patient details to predict if the case is **Benign** or **Malignant**")
 
-model = load_model()
+# Load trained model
+model = load_model("skin_cancer_metadata_final.h5")
 
-# ----------------------------------
-# 2️⃣ Page setup
-# ----------------------------------
-st.set_page_config(page_title="Skin Cancer Predictor", layout="centered")
-st.title("🧬 Skin Cancer Prediction from Patient Metadata")
+# -------------------------------
+# Input fields
+# -------------------------------
+st.header("🔹 Patient Information")
 
-st.write("Enter patient details below to predict if the lesion is **Benign (0)** or **Malignant (1)**.")
-
-# ----------------------------------
-# 3️⃣ Input fields
-# ----------------------------------
-age = st.number_input("Age", min_value=0, max_value=120, value=40)
-smoke = st.selectbox("Do you smoke?", [0, 1])
-drink = st.selectbox("Do you drink?", [0, 1])
-background_father = st.selectbox("Father's background (0/1)", [0, 1])
-background_mother = st.selectbox("Mother's background (0/1)", [0, 1])
-pesticide = st.selectbox("Exposure to pesticide?", [0, 1])
-gender = st.selectbox("Gender", [0, 1])  # 0=Female, 1=Male
-skin_cancer_history = st.selectbox("Previous Skin Cancer History?", [0, 1])
-cancer_history = st.selectbox("Cancer History?", [0, 1])
-has_piped_water = st.selectbox("Has Piped Water?", [0, 1])
-has_sewage_system = st.selectbox("Has Sewage System?", [0, 1])
-fitspatrick = st.slider("Fitspatrick Skin Type", 1, 6, 3)
-region = st.number_input("Region code (0-10)", min_value=0, max_value=10, value=1)
-itch = st.selectbox("Itching?", [0, 1])
-grew = st.selectbox("Growth observed?", [0, 1])
-hurt = st.selectbox("Hurts?", [0, 1])
-changed = st.selectbox("Changed recently?", [0, 1])
-bleed = st.selectbox("Bleeding?", [0, 1])
-elevation = st.selectbox("Elevation?", [0, 1])
-biopsed = st.selectbox("Biopsed?", [0, 1])
+age = st.number_input("Age", min_value=0, max_value=120, value=35)
+smoke = st.selectbox("Smoke", [0, 1])
+drink = st.selectbox("Drink", [0, 1])
+background_father = st.selectbox("Background Father", [0, 1])
+background_mother = st.selectbox("Background Mother", [0, 1])
+pesticide = st.selectbox("Pesticide Exposure", [0, 1])
+gender = st.selectbox("Gender (0=Male, 1=Female)", [0, 1])
+skin_cancer_history = st.selectbox("Skin Cancer History", [0, 1])
+cancer_history = st.selectbox("Cancer History", [0, 1])
+has_piped_water = st.selectbox("Has Piped Water", [0, 1])
+has_sewage_system = st.selectbox("Has Sewage System", [0, 1])
+fitspatrick = st.number_input("Fitspatrick Type (1-6)", min_value=1, max_value=6, value=3)
+region = st.number_input("Region (encoded number)", min_value=0, value=1)
+itch = st.selectbox("Itch", [0, 1])
+grew = st.selectbox("Grew", [0, 1])
+hurt = st.selectbox("Hurt", [0, 1])
+changed = st.selectbox("Changed", [0, 1])
+bleed = st.selectbox("Bleed", [0, 1])
+elevation = st.selectbox("Elevation", [0, 1])
+biopsed = st.selectbox("Biopsed", [0, 1])
 diameter_1 = st.number_input("Diameter 1 (mm)", min_value=0.0, value=5.0)
-diameter_2 = st.number_input("Diameter 2 (mm)", min_value=0.0, value=5.0)
+diameter_2 = st.number_input("Diameter 2 (mm)", min_value=0.0, value=6.0)
 
-# ----------------------------------
-# 4️⃣ Prepare input data
-# ----------------------------------
+# Collect all inputs in order
 input_data = np.array([[
     age, smoke, drink, background_father, background_mother,
     pesticide, gender, skin_cancer_history, cancer_history,
@@ -59,24 +50,22 @@ input_data = np.array([[
     diameter_1, diameter_2
 ]])
 
-# StandardScaler ensures normalization for numeric input
-scaler = StandardScaler()
-input_scaled = scaler.fit_transform(input_data)
-
-# ----------------------------------
-# 5️⃣ Prediction
-# ----------------------------------
+# -------------------------------
+# Prediction Button
+# -------------------------------
 if st.button(" Predict"):
-    prediction = model.predict(input_scaled)
-    result = (prediction > 0.5).astype(int)[0][0]
+    try:
+        # Scale input dynamically (same as StandardScaler)
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(input_data)
 
-    if result == 1:
-        st.error(" The model predicts **Malignant (Cancer Detected)**")
-    else:
-        st.success(" The model predicts **Benign (No Cancer Detected)**")
+        # Predict
+        prediction = model.predict(X_scaled)
+        result = " Benign (Non-Cancerous)" if prediction < 0.5 else " Malignant (Cancerous)"
 
-# ----------------------------------
-# 6️⃣ Footer
-# ----------------------------------
-st.markdown("---")
-st.caption("Developed with  using TensorFlow and Streamlit")
+        st.subheader("Prediction Result:")
+        st.success(result)
+        st.write(f"**Prediction Score:** {float(prediction):.4f}")
+
+    except Exception as e:
+        st.error(f"Prediction failed: {e}")
